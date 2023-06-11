@@ -1,6 +1,6 @@
-import getCmds from "./get_cmds";
+import getCmds from "./get_cmds.js";
 import { REST, RESTPostAPIChatInputApplicationCommandsJSONBody, Routes } from 'discord.js';
-import loadConfig from "./load_config";
+import loadConfig from "./load_config.js";
 
 // Get environment variables
 loadConfig();
@@ -20,7 +20,7 @@ if (devGuildId === undefined) {
     process.exit(1);
 }
 
-const commands = getCmds();
+const commands = await getCmds();
 
 let everyoneCommands: RESTPostAPIChatInputApplicationCommandsJSONBody[] = [];
 let adminCommands: RESTPostAPIChatInputApplicationCommandsJSONBody[] = [];

@@ -1,12 +1,12 @@
 import { Client, Events, GatewayIntentBits } from 'discord.js';
 import consoleStamp from 'console-stamp';
-import getCmds from './get_cmds';
-import loadConfig from './load_config';
+import getCmds from './get_cmds.js';
+import loadConfig from './load_config.js';
 
 // Enhance console logging
 consoleStamp(console);
 
-const commands = getCmds();
+const commands = await getCmds();
 
 loadConfig();
 
