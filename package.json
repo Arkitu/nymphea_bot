@@ -8,7 +8,7 @@
     "start:dev": "npx nodemon",
     "build": "rimraf ./build && tsc",
     "start": "npm run build && node build/index.js",
-    "register_cmds": "ts-node ./src/register_cmds.ts"
+    "register_cmds": "npm run build && node ./build/register_cmds.js"
   },
   "author": "",
   "license": "ISC",
