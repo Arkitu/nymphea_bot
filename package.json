@@ -8,7 +8,8 @@
     "start:dev": "npx nodemon",
     "build": "rimraf ./build && tsc",
     "start": "npm run build && node build/index.js",
-    "register_cmds": "npm run build && node ./build/register_cmds.js"
+    "register_cmds": "npm run build && node ./build/register_cmds.js",
+    "update": "git pull && npm i && npm start"
   },
   "author": "",
   "license": "MIT",
