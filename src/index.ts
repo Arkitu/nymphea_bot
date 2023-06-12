@@ -22,8 +22,8 @@ client.once(Events.ClientReady, () => {
 
 // Handle commands
 client.on(Events.InteractionCreate, async interaction => {
-    if (!interaction.isCommand()) return;
-
+    if (!interaction.isChatInputCommand()) return;
+    
     const command = commands.get(interaction.commandName);
     if (command === undefined) {
         console.error(`${interaction.user.username} tried to use an unknown command: ${interaction.commandName}`);

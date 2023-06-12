@@ -11,7 +11,7 @@
     "register_cmds": "npm run build && node ./build/register_cmds.js"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.3.0",
     "nodemon": "^2.0.22",
