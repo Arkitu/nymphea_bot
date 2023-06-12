@@ -2,6 +2,7 @@ import { Client, Events, GatewayIntentBits } from 'discord.js';
 import consoleStamp from 'console-stamp';
 import getCmds from './get_cmds.js';
 import loadConfig from './load_config.js';
+import loadDb from './load_db.js';
 
 // Enhance console logging
 consoleStamp(console);
@@ -9,6 +10,8 @@ consoleStamp(console);
 const commands = await getCmds();
 
 loadConfig();
+
+loadDb();
 
 // Create client
 const client = new Client({
@@ -31,7 +34,9 @@ client.on(Events.InteractionCreate, async interaction => {
         return;
     }
 
-    if (command.admin && !process.env.ADMIN?.split(", ").includes(interaction.user.id)) {
+    console.log(process.env.ADMIN_IDS?.split(", "));
+
+    if (command.admin && !process.env.ADMIN_IDS?.split(", ").includes(interaction.user.id)) {
         console.log(`${interaction.user.username} tried to use an admin command: ${interaction.commandName}`);
         await interaction.reply({ content: '⚠️ Vous n\'avez pas la permission d\'utiliser cette commande!', ephemeral: true });
         return;
