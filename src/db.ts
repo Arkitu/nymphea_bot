@@ -112,6 +112,15 @@ export default class DB {
         })
     }
 
+    getItemsFromUser(user_id: string): Promise<Item[]> {
+        return new Promise((resolve, reject) => {
+            this.realDB.all("SELECT * FROM items WHERE user_id = ?", [user_id], (err, rows) => {
+                if (err) console.debug(err);
+                resolve(rows as Item[]);
+            })
+        })
+    }
+
     getAllItems(): Promise<Item[]> {
         return new Promise((resolve, reject) => {
             this.realDB.all("SELECT * FROM items", (err, rows) => {

@@ -7,6 +7,8 @@ import loadDb from './load_db.js';
 // Enhance console logging
 consoleStamp(console);
 
+console.log("Starting bot...");
+
 const commands = await getCmds();
 
 loadConfig();
@@ -34,20 +36,24 @@ client.on(Events.InteractionCreate, async interaction => {
         return;
     }
 
-    console.log(process.env.ADMIN_IDS?.split(", "));
-
     if (command.admin && !process.env.ADMIN_IDS?.split(", ").includes(interaction.user.id)) {
         console.log(`${interaction.user.username} tried to use an admin command: ${interaction.commandName}`);
         await interaction.reply({ content: '⚠️ Vous n\'avez pas la permission d\'utiliser cette commande!', ephemeral: true });
         return;
     }
 
-    try {
-        await command.execute(interaction);
-    } catch (error) {
-        console.error(`${interaction.user.username} tried to use /${interaction.commandName} but an error occured: ${error}`);
-        await interaction.reply({ content: '⚠️ Il y a eu une erreur lors de l\'exécution de cette commande!', ephemeral: true });
-    }
+    await command.execute(interaction);
+
+    // try {
+    //     await command.execute(interaction);
+    // } catch (error) {
+    //     console.error(`${interaction.user.username} tried to use /${interaction.commandName} but an error occured: ${error}`);
+    //     try {
+    //         await interaction.reply({ content: '⚠️ Une erreur est survenue lors de l\'exécution de cette commande!', ephemeral: true });
+    //     } catch (error) {
+    //         await interaction.editReply({ content: '⚠️ Une erreur est survenue lors de l\'exécution de cette commande!' });
+    //     }
+    // }
 })
 
 // If no token is provided, exit
