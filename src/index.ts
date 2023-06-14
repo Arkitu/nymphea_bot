@@ -42,6 +42,8 @@ client.on(Events.InteractionCreate, async interaction => {
         return;
     }
 
+    console.log(`${interaction.user.username} uses command: ${interaction.commandName}`);
+
     await command.execute(interaction);
 
     // try {
