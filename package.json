@@ -7,11 +7,11 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start:dev": "npx nodemon",
     "partial_build": "tsc",
-    "build": "rimraf ./build && npm run partial_build",
-    "complete_build": "npm run build && npm run register_cmds",
-    "start": "npm run build && node build/index.js",
-    "register_cmds": "npm run build && node ./build/register_cmds.js",
-    "update": "git pull && npm i && npm run complete_build && npm start"
+    "build": "rimraf ./build && tsc",
+    "complete_build": "rimraf ./build && tsc && node ./build/register_cmds.js",
+    "start": "rimraf ./build && tsc && node build/index.js",
+    "register_cmds": "rimraf ./build && tsc && node ./build/register_cmds.js",
+    "update": "git pull && npm i && npm rimraf ./build && tsc && node ./build/register_cmds.js && node build/index.js"
   },
   "author": "",
   "license": "MIT",
