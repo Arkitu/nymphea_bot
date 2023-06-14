@@ -1,4 +1,5 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
+import getEmojiFromName from '../getEmojiFromName.js';
 
 export const data = new SlashCommandBuilder()
     .setName('db')
@@ -32,16 +33,6 @@ export const data = new SlashCommandBuilder()
                 subcommand.setName('create')
                     .setDescription('Crée un objet')
                     .addStringOption(option =>
-                        option.setName('id')
-                            .setDescription('Identifiant de l\'objet')
-                            .setRequired(true)
-                    )
-                    .addUserOption(option =>
-                        option.setName('owner')
-                            .setDescription('Propriétaire de l\'objet')
-                            .setRequired(true)
-                    )
-                    .addStringOption(option =>
                         option.setName('name')
                             .setDescription('Nom de l\'objet')
                             .setRequired(true)
@@ -49,11 +40,6 @@ export const data = new SlashCommandBuilder()
                     .addStringOption(option =>
                         option.setName('emoji')
                             .setDescription('Emoji de l\'objet')
-                            .setRequired(true)
-                    )
-                    .addIntegerOption(option =>
-                        option.setName('quantity')
-                            .setDescription('Quantité de l\'objet')
                             .setRequired(true)
                     )
             )
@@ -80,14 +66,16 @@ export async function execute(interaction: ChatInputCommandInteraction) {
             await interaction.editReply(usersString);
             break;
         case "item/create":
-            await db.createItem(interaction.options.getString('id'), interaction.options.getUser('owner').id, interaction.options.getString('name'), interaction.options.getString('emoji'), interaction.options.getInteger('quantity'));
+            const name = interaction.options.getString('name');
+            const emoji = interaction.options.getString('emoji') || await getEmojiFromName(name);
+            await db.createItem(name, emoji);
             await interaction.editReply("Objet créé ✅");
             break;
         case "item/list":
             let items = await db.getAllItems();
             let itemsString = "";
             for (let item of items) {
-                itemsString += `${item.id} - <@${item.user_id}> - ${item.name} - ${item.emoji} - ${item.quantity}\n`;
+                itemsString += `• ${item.emoji} ${item.name}\n`;
             }
             await interaction.editReply(itemsString);
             break;

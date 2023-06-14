@@ -1,4 +1,5 @@
 import { ChatInputCommandInteraction, EmbedBuilder, SlashCommandBuilder } from 'discord.js';
+import getEmojiFromName from '../getEmojiFromName.js';
 
 export const data = new SlashCommandBuilder()
     .setName('inventory')
@@ -11,6 +12,26 @@ export const data = new SlashCommandBuilder()
                     .setDescription('L\'utilisateur dont on veut afficher l\'inventaire (par défaut: vous)')
                     .setRequired(false)
             )
+    )
+    .addSubcommand(subcommand =>
+        subcommand.setName('add')
+            .setDescription('Ajoute un objet à l\'inventaire')
+            .addStringOption(option =>
+                option.setName('name')
+                    .setDescription('Nom de l\'objet')
+                    .setRequired(true)
+            )
+            .addIntegerOption(option =>
+                option.setName('quantity')
+                    .setDescription('Quantité de l\'objet')
+                    .setMinValue(1)
+                    .setRequired(false)
+            )
+            .addStringOption(option =>
+                option.setName('emoji')
+                    .setDescription('Emoji de l\'objet')
+                    .setRequired(false)
+            )
     );
 
 export async function execute(interaction: ChatInputCommandInteraction) {
@@ -20,6 +41,11 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         case 'view':
             await view(interaction);
             break;
+        case 'add':
+            await add(interaction);
+            break;
+        default:
+            throw new Error(`Subcommand ${subcommand} not implemented but used by ${interaction.user.username}`);
     }
 }
 
@@ -34,12 +60,13 @@ async function view(interaction: ChatInputCommandInteraction) {
         .setThumbnail(user.displayAvatarURL())
         .setColor(`#${process.env.MAIN_COLOR}`);
 
-    if (items.length === 0) {
+    if (Object.keys(items).length === 0) {
         embed.setDescription('Cet utilisateur n\'a aucun item.');
     } else {
         let description = '';
-        for (let item of items) {
-            description += `• ${item.emoji} **${item.name}** x${item.quantity}\n`;
+        for (let itemName in items) {
+            let item = await db.getItem(itemName);
+            description += `• ${item.emoji} **${item.name}** x${items[item.name]}\n`;
         }
         embed.setDescription(description);
     }
@@ -47,4 +74,15 @@ async function view(interaction: ChatInputCommandInteraction) {
     await interaction.editReply({ embeds: [embed] });
 }
 
-export const admin = true;
+async function add(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply();
+    const name = interaction.options.getString('name', true).toLocaleLowerCase();
+    const emoji = interaction.options.getString('emoji', false) || await getEmojiFromName(name);
+    const quantity = interaction.options.getInteger('quantity', false) || 1;
+
+    await db.addItemToUserOrCreate(interaction.user.id, interaction.user.username, name, emoji, quantity);
+
+    await interaction.editReply(`${quantity} ${emoji} **${name}** ${(()=>{if (quantity == 1) {return "a"} else {return "ont"} })()} été ajouté à votre inventaire.`);
+}
+
+export const admin = false;

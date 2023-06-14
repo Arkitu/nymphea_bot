@@ -2,5 +2,5 @@
   "watch": ["src"],
   "ext": ".ts,.js",
   "ignore": [],
-  "exec": "npm run partial_build && node build/index.js"
+  "exec": "tsc && node build/index.js"
 }

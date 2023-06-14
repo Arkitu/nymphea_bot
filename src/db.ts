@@ -8,10 +8,13 @@ export interface User {
 }
 
 export interface Item {
-    id: string;
-    user_id: string;
     name: string;
     emoji: string;
+}
+
+export interface UserItem {
+    user_id: string;
+    item_name: string;
     quantity: number;
 }
 
@@ -26,25 +29,41 @@ export default class DB {
             new Promise<void>((resolve, reject) => {
                 this.realDB.run(
                     `CREATE TABLE IF NOT EXISTS users (
-                        id TEXT PRIMARY KEY,
-                        username TEXT
+                        id TEXT,
+                        username TEXT,
+                        PRIMARY KEY (id)
                     )`, (err) => {
-                    if (err) reject(err);
-                    resolve();
-                })
+                        if (err) reject(err);
+                        resolve();
+                    }
+                )
             }),
             new Promise<void>((resolve, reject) => {
                 this.realDB.run(
                     `CREATE TABLE IF NOT EXISTS items (
-                        id TEXT PRIMARY KEY,
-                        user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
                         name TEXT,
                         emoji CHAR(1),
-                        quantity INTEGER
+                        PRIMARY KEY (name)
                     )`, (err) => {
-                    if (err) reject(err);
-                    resolve();
-                })
+                        if (err) reject(err);
+                        resolve();
+                    }
+                )
+            }),
+            new Promise<void>((resolve, reject) => {
+                this.realDB.run(
+                    `CREATE TABLE IF NOT EXISTS user_items (
+                        user_id TEXT,
+                        item_name TEXT,
+                        quantity INTEGER,
+                        PRIMARY KEY (user_id, item_name),
+                        FOREIGN KEY (user_id) REFERENCES users(id),
+                        FOREIGN KEY (item_name) REFERENCES items(name)
+                    )`, (err) => {
+                        if (err) reject(err);
+                        resolve();
+                    }
+                )
             })
         ]);
     }
@@ -67,11 +86,22 @@ export default class DB {
         })
     }
 
-    updateUser(user: User): Promise<void> {
+    createUserIfNotExists(id: string, username: string): Promise<void> {
         return new Promise((resolve, reject) => {
-            this.realDB.run("UPDATE users SET username = ? WHERE id = ?", [user.username, user.id], (err) => {
+            this.realDB.run("INSERT OR IGNORE INTO users (id, username) VALUES (?, ?)", [id, username], (err) => {
                 if (err) reject(err);
                 resolve();
+            })
+        })
+    }
+
+    updateUser(user: User): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.createUserIfNotExists(user.id, user.username).then(() => {
+                this.realDB.run("UPDATE users SET username = ? WHERE id = ?", [user.username, user.id], (err) => {
+                    if (err) reject(err);
+                    resolve();
+                })
             })
         })
     }
@@ -85,38 +115,42 @@ export default class DB {
         })
     }
 
-    getItem(id: string): Promise<Item> {
+    getItem(name: string): Promise<Item> {
         return new Promise((resolve, reject) => {
-            this.realDB.get("SELECT * FROM items WHERE id = ?", [id], (err, row) => {
+            this.realDB.get("SELECT * FROM items WHERE name = ?", [name], (err, row) => {
                 if (err) reject(err);
                 resolve(row as Item);
             })
         })
     }
 
-    createItem(id: string, user_id: string, name: string, emoji: string, quantity: number): Promise<void> {
+    createItem(name: string, emoji: string): Promise<void> {
         return new Promise((resolve, reject) => {
-            this.realDB.run("INSERT INTO items (id, user_id, name, emoji, quantity) VALUES (?, ?, ?, ?, ?)", [id, user_id, name, emoji, quantity], (err) => {
+            this.realDB.run("INSERT INTO items (name, emoji) VALUES (?, ?)", [name, emoji], (err) => {
                 if (err) reject(err);
                 resolve();
             })
         })
     }
 
-    updateItem(item: Item): Promise<void> {
+    createItemIfNotExists(name: string, emoji: string): Promise<void> {
         return new Promise((resolve, reject) => {
-            this.realDB.run("UPDATE items SET user_id = ?, name = ?, emoji = ?, quantity = ? WHERE id = ?", [item.user_id, item.name, item.emoji, item.quantity, item.id], (err) => {
+            this.realDB.run("INSERT OR IGNORE INTO items (name, emoji) VALUES (?, ?)", [name, emoji], (err) => {
                 if (err) reject(err);
                 resolve();
             })
         })
     }
 
-    getItemsFromUser(user_id: string): Promise<Item[]> {
+    getItemsFromUser(user_id: string): Promise<{ [key: string] : number }> {
         return new Promise((resolve, reject) => {
-            this.realDB.all("SELECT * FROM items WHERE user_id = ?", [user_id], (err, rows) => {
-                if (err) console.debug(err);
-                resolve(rows as Item[]);
+            this.realDB.all("SELECT * FROM user_items WHERE user_id = ?", [user_id], (err, rows: UserItem[]) => {
+                if (err) reject(err);
+                const items: { [key: string] : number } = {};
+                for (let row of rows) {
+                    items[row.item_name] = row.quantity;
+                }
+                resolve(items);
             })
         })
     }
@@ -126,6 +160,38 @@ export default class DB {
             this.realDB.all("SELECT * FROM items", (err, rows) => {
                 if (err) reject(err);
                 resolve(rows as Item[]);
+            })
+        })
+    }
+
+    addItemToUserOrCreate(user_id: string, user_name: string, item_name: string, item_emoji: string, quantity: number): Promise<void> {
+        return new Promise((resolve, reject) => {
+            // Add user if don't exist
+            this.realDB.run("INSERT OR IGNORE INTO users (id, username) VALUES (?, ?)", [user_id, user_name], (err) => {
+                if (err) reject(err);
+
+                // Add item if don't exist
+                this.realDB.run("INSERT OR IGNORE INTO items (name, emoji) VALUES (?, ?)", [item_name, item_emoji], (err) => {
+                    if (err) reject(err);
+
+                    // Check if user already has item
+                    this.realDB.get("SELECT * FROM user_items WHERE user_id = ? AND item_name = ?", [user_id, item_name], (err, row) => {
+                        if (err) reject(err);
+
+                        // If user already has item, update quantity
+                        if (row) {
+                            this.realDB.run("UPDATE user_items SET quantity = quantity + ? WHERE user_id = ? AND item_name = ?", [quantity, user_id, item_name], (err) => {
+                                if (err) reject(err);
+                                resolve();
+                            })
+                        } else {
+                            this.realDB.run("INSERT INTO user_items (user_id, item_name, quantity) VALUES (?, ?, ?)", [user_id, item_name, quantity], (err) => {
+                                if (err) reject(err);
+                                resolve();
+                            })
+                        }
+                    })
+                })
             })
         })
     }
