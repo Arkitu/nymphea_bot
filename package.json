@@ -11,7 +11,7 @@
     "complete_build": "rimraf ./build && tsc && node ./build/register_cmds.js",
     "start": "rimraf ./build && tsc && node build/index.js",
     "register_cmds": "rimraf ./build && tsc && node ./build/register_cmds.js",
-    "update": "git pull && npm i && npm rimraf ./build && tsc && node ./build/register_cmds.js && node build/index.js"
+    "update": "git pull && npm i && rimraf ./build && tsc && node ./build/register_cmds.js && node build/index.js"
   },
   "author": "",
   "license": "MIT",
