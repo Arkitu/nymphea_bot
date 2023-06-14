@@ -6,10 +6,12 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start:dev": "npx nodemon",
-    "build": "rimraf ./build && tsc",
+    "partial_build": "tsc",
+    "build": "rimraf ./build && npm run partial_build",
+    "complete_build": "npm run build && npm run register_cmds",
     "start": "npm run build && node build/index.js",
     "register_cmds": "npm run build && node ./build/register_cmds.js",
-    "update": "git pull && npm i && npm start"
+    "update": "git pull && npm i && npm run complete_build && npm start"
   },
   "author": "",
   "license": "MIT",
