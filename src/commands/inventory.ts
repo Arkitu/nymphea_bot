@@ -32,10 +32,47 @@ export const data = new SlashCommandBuilder()
                     .setDescription('Emoji de l\'objet')
                     .setRequired(false)
             )
-    );
+    )
+    .addSubcommand(subcommand =>
+        subcommand.setName('remove')
+            .setDescription('Retire un objet de l\'inventaire')
+            .addStringOption(option =>
+                option.setName('name')
+                    .setDescription('Nom de l\'objet')
+                    .setRequired(true)
+            )
+            .addIntegerOption(option =>
+                option.setName('quantity')
+                    .setDescription('Quantité de l\'objet (par défaut: tout)')
+                    .setMinValue(1)
+                    .setRequired(false)
+            )
+    )
+    .addSubcommand(subcommand =>
+        subcommand.setName('give')
+            .setDescription('Donne un objet à un utilisateur')
+            .addUserOption(option =>
+                option.setName('user')
+                    .setDescription('L\'utilisateur à qui donner l\'objet')
+                    .setRequired(true)
+            )
+            .addStringOption(option =>
+                option.setName('name')
+                    .setDescription('Nom de l\'objet')
+                    .setRequired(true)
+            )
+            .addIntegerOption(option =>
+                option.setName('quantity')
+                    .setDescription('Quantité de l\'objet (par défaut: tout)')
+                    .setMinValue(1)
+                    .setRequired(false)
+            )
+    )
 
 export async function execute(interaction: ChatInputCommandInteraction) {
     const subcommand = interaction.options.getSubcommand();
+
+    await db.updateOrCreateUser(interaction.user.id, interaction.user.username);
 
     switch (subcommand) {
         case 'view':
@@ -43,6 +80,12 @@ export async function execute(interaction: ChatInputCommandInteraction) {
             break;
         case 'add':
             await add(interaction);
+            break;
+        case 'remove':
+            await remove(interaction);
+            break;
+        case 'give':
+            await give(interaction);
             break;
         default:
             throw new Error(`Subcommand ${subcommand} not implemented but used by ${interaction.user.username}`);
@@ -83,6 +126,49 @@ async function add(interaction: ChatInputCommandInteraction) {
     await db.addItemToUserOrCreate(interaction.user.id, interaction.user.username, name, emoji, quantity);
 
     await interaction.editReply(`${quantity} ${emoji} **${name}** ${(()=>{if (quantity == 1) {return "a"} else {return "ont"} })()} été ajouté à votre inventaire.`);
+}
+
+async function remove(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply();
+    const name = interaction.options.getString('name', true).toLocaleLowerCase();
+    const quantity = interaction.options.getInteger('quantity', false);
+
+    let item = await db.getItem(name);
+    let items = await db.getItemsFromUser(interaction.user.id);
+
+    if (items[name] === undefined) {
+        await interaction.editReply(`Vous n'avez pas d'objet nommé **${name}** dans votre inventaire.`);
+        return;
+    }
+
+    await db.removeItemFromUser(interaction.user.id, name, quantity);
+    
+    if (quantity === null) {
+        await interaction.editReply(`Tout les **${name}** ${item.emoji} ont été retiré de votre inventaire.`);
+    } else {
+        await interaction.editReply(`**${quantity} ${name}** ${item.emoji} ont été retiré de votre inventaire.`);
+    }
+}
+
+async function give(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply();
+    const user = interaction.options.getUser('user', true);
+    const name = interaction.options.getString('name', true).toLocaleLowerCase();
+    const quantity = interaction.options.getInteger('quantity', false);
+
+    const item = await db.getItem(name);
+    if (item === undefined) {
+        await interaction.editReply(`Il n'y a pas d'objet nommé ${name}.`);
+        return;
+    }
+
+    db.giveItem(interaction.user.id, user.id, name, quantity);
+
+    if (quantity === null) {
+        await interaction.editReply(`${user.username} a reçu tout les **${name}** ${item.emoji}`);
+    } else {
+        await interaction.editReply(`${user.username} a reçu **${quantity} ${name}** ${item.emoji}`);
+    }
 }
 
 export const admin = false;

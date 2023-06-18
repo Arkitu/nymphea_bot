@@ -95,13 +95,21 @@ export default class DB {
         })
     }
 
-    updateUser(user: User): Promise<void> {
+    updateUser(user_id: string, username: string): Promise<void> {
         return new Promise((resolve, reject) => {
-            this.createUserIfNotExists(user.id, user.username).then(() => {
-                this.realDB.run("UPDATE users SET username = ? WHERE id = ?", [user.username, user.id], (err) => {
+            this.createUserIfNotExists(user_id, username).then(() => {
+                this.realDB.run("UPDATE users SET username = ? WHERE id = ?", [username, user_id], (err) => {
                     if (err) reject(err);
                     resolve();
                 })
+            })
+        })
+    }
+
+    updateOrCreateUser(user_id: string, username: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.createUserIfNotExists(user_id, username).then(() => {
+                this.updateUser(user_id, username).then(resolve).catch(reject);
             })
         })
     }
@@ -142,6 +150,23 @@ export default class DB {
         })
     }
 
+    updateItem(item: Item): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.realDB.run("UPDATE items SET emoji = ? WHERE name = ?", [item.emoji, item.name], (err) => {
+                if (err) reject(err);
+                resolve();
+            })
+        })
+    }
+
+    updateOrCreateItem(item: Item): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.createItemIfNotExists(item.name, item.emoji).then(() => {
+                this.updateItem(item).then(resolve).catch(reject);
+            })
+        })
+    }
+
     getItemsFromUser(user_id: string): Promise<{ [key: string] : number }> {
         return new Promise((resolve, reject) => {
             this.realDB.all("SELECT * FROM user_items WHERE user_id = ?", [user_id], (err, rows: UserItem[]) => {
@@ -152,6 +177,91 @@ export default class DB {
                 }
                 resolve(items);
             })
+        })
+    }
+
+    getItemFromUser(user_id: string, item_name: string): Promise<UserItem> {
+        return new Promise((resolve, reject) => {
+            this.realDB.get("SELECT * FROM user_items WHERE user_id = ? AND item_name = ?", [user_id, item_name], (err, row) => {
+                if (err) reject(err);
+                resolve(row as UserItem);
+            })
+        })
+    }
+
+    /**
+     * @throws Error if user doesn't have enough items
+     */
+    removeItemFromUser(user_id: string, item_name: string, quantity: number|null): Promise<void> {
+        return new Promise((resolve, reject) => {
+            if (quantity == null) {
+                this.realDB.run("DELETE FROM user_items WHERE user_id = ? AND item_name = ?", [user_id, item_name], (err) => {
+                    if (err) reject(err);
+                    resolve();
+                })
+            } else {
+                // Check if user has enough items
+                this.getItemFromUser(user_id, item_name).then((item) => {
+                    if (item.quantity < quantity) {
+                        reject(new Error("User doesn't have enough items"));
+                    }
+
+                    // If user quantity is the same as the quantity to remove, delete the row
+                    if (item.quantity == quantity) {
+                        this.realDB.run("DELETE FROM user_items WHERE user_id = ? AND item_name = ?", [user_id, item_name], (err) => {
+                            if (err) reject(err);
+                            resolve();
+                        })
+                    }
+
+                    // If user quantity is greater than the quantity to remove, update the quantity
+                    if (item.quantity > quantity) {
+                        this.realDB.run("UPDATE user_items SET quantity = quantity - ? WHERE user_id = ? AND item_name = ?", [quantity, user_id, item_name], (err) => {
+                            if (err) reject(err);
+                            resolve();
+                        })
+                    }
+                }).catch(reject);
+            }
+        })
+    }
+
+    addItemToUser(user_id: string, item_name: string, quantity: number): Promise<void> {
+        return new Promise((resolve, reject) => {
+            // Check if user already has item
+            this.realDB.get("SELECT * FROM user_items WHERE user_id = ? AND item_name = ?", [user_id, item_name], (err, row) => {
+                if (err) reject(err);
+
+                if (row) {
+                    // If user already has item, update quantity
+                    this.realDB.run("UPDATE user_items SET quantity = quantity + ? WHERE user_id = ? AND item_name = ?", [quantity, user_id, item_name], (err) => {
+                        if (err) reject(err);
+                        resolve();
+                    })
+                } else {
+                    // If user doesn't have item, add it
+                    this.realDB.run("INSERT INTO user_items (user_id, item_name, quantity) VALUES (?, ?, ?)", [user_id, item_name, quantity], (err) => {
+                        if (err) reject(err);
+                        resolve();
+                    })
+                }
+            })
+        })
+    }
+
+    giveItem(giver_id: string, receiver_id: string, item_name: string, quantity: number|null): Promise<void> {
+        return new Promise(async (resolve, reject) => {
+            if (quantity == null) {
+                quantity = (await this.getItemFromUser(giver_id, item_name)).quantity;
+            }
+
+            // Remove item from giver
+            await this.removeItemFromUser(giver_id, item_name, quantity);
+
+            // Add item to receiver
+            await this.addItemToUser(receiver_id, item_name, quantity);
+
+            resolve();
         })
     }
 
@@ -174,23 +284,8 @@ export default class DB {
                 this.realDB.run("INSERT OR IGNORE INTO items (name, emoji) VALUES (?, ?)", [item_name, item_emoji], (err) => {
                     if (err) reject(err);
 
-                    // Check if user already has item
-                    this.realDB.get("SELECT * FROM user_items WHERE user_id = ? AND item_name = ?", [user_id, item_name], (err, row) => {
-                        if (err) reject(err);
-
-                        // If user already has item, update quantity
-                        if (row) {
-                            this.realDB.run("UPDATE user_items SET quantity = quantity + ? WHERE user_id = ? AND item_name = ?", [quantity, user_id, item_name], (err) => {
-                                if (err) reject(err);
-                                resolve();
-                            })
-                        } else {
-                            this.realDB.run("INSERT INTO user_items (user_id, item_name, quantity) VALUES (?, ?, ?)", [user_id, item_name, quantity], (err) => {
-                                if (err) reject(err);
-                                resolve();
-                            })
-                        }
-                    })
+                    // Add item to user
+                    this.addItemToUser(user_id, item_name, quantity).then(resolve);
                 })
             })
         })

@@ -42,8 +42,14 @@ client.on(Events.InteractionCreate, async interaction => {
         return;
     }
 
-    console.log(`${interaction.user.username} uses command: ${interaction.commandName}`);
-
+    if (interaction.options.getSubcommandGroup) {
+        console.log(`${interaction.user.username} uses command: ${interaction.commandName} ${interaction.options.getSubcommandGroup()} ${interaction.options.getSubcommand()}`);
+    } else if (interaction.options.getSubcommand) {
+        console.log(`${interaction.user.username} uses command: ${interaction.commandName} ${interaction.options.getSubcommand()}`);
+    } else {
+        console.log(`${interaction.user.username} uses command: ${interaction.commandName}`);
+    }
+    
     await command.execute(interaction);
 
     // try {
