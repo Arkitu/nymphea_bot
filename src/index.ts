@@ -49,19 +49,17 @@ client.on(Events.InteractionCreate, async interaction => {
     } else {
         console.log(`${interaction.user.username} uses command: ${interaction.commandName}`);
     }
-    
-    await command.execute(interaction);
 
-    // try {
-    //     await command.execute(interaction);
-    // } catch (error) {
-    //     console.error(`${interaction.user.username} tried to use /${interaction.commandName} but an error occured: ${error}`);
-    //     try {
-    //         await interaction.reply({ content: '⚠️ Une erreur est survenue lors de l\'exécution de cette commande!', ephemeral: true });
-    //     } catch (error) {
-    //         await interaction.editReply({ content: '⚠️ Une erreur est survenue lors de l\'exécution de cette commande!' });
-    //     }
-    // }
+    try {
+        await command.execute(interaction);
+    } catch (error) {
+        console.error(`${interaction.user.username} tried to use /${interaction.commandName} but an error occured: ${error}`);
+        try {
+            await interaction.reply({ content: '⚠️ Une erreur est survenue lors de l\'exécution de cette commande!', ephemeral: true });
+        } catch (error) {
+            await interaction.editReply({ content: '⚠️ Une erreur est survenue lors de l\'exécution de cette commande!' });
+        }
+    }
 })
 
 // If no token is provided, exit
