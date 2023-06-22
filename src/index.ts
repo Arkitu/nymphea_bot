@@ -42,12 +42,12 @@ client.on(Events.InteractionCreate, async interaction => {
         return;
     }
 
-    if (interaction.options.getSubcommandGroup) {
-        console.log(`${interaction.user.username} uses command: ${interaction.commandName} ${interaction.options.getSubcommandGroup()} ${interaction.options.getSubcommand()}`);
-    } else if (interaction.options.getSubcommand) {
-        console.log(`${interaction.user.username} uses command: ${interaction.commandName} ${interaction.options.getSubcommand()}`);
+    if (interaction.options.getSubcommandGroup(false)) {
+        console.log(`${interaction.user.username} uses command: /${interaction.commandName} ${interaction.options.getSubcommandGroup(true)} ${interaction.options.getSubcommand(true)}`);
+    } else if (interaction.options.getSubcommand(false)) {
+        console.log(`${interaction.user.username} uses command: /${interaction.commandName} ${interaction.options.getSubcommand(true)}`);
     } else {
-        console.log(`${interaction.user.username} uses command: ${interaction.commandName}`);
+        console.log(`${interaction.user.username} uses command: /${interaction.commandName}`);
     }
 
     try {
