@@ -19,6 +19,11 @@ export const data = new SlashCommandBuilder()
                             .setDescription('Utilisateur à qui attribuer le personnage')
                             .setRequired(true)
                     )
+                    .addStringOption(option =>
+                        option.setName('avatar_url')
+                            .setDescription('URL de l\'avatar du personnage')
+                            .setRequired(false)
+                    )
             )
     );
 
@@ -52,9 +57,15 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 async function characterAdd(interaction: ChatInputCommandInteraction) {
     const name = interaction.options.getString('name', true);
     const user = interaction.options.getUser('user', true);
+    const avatar_url = interaction.options.getString('avatar_url', false);
 
     await db.updateOrCreateUser(user.id, user.username);
-    await db.createCharacter(user.id, name);
+
+    if (avatar_url) {
+        await db.createCharacter(user.id, name, avatar_url);
+    } else {
+        await db.createCharacter(user.id, name);
+    }
 
     await interaction.editReply({
         content: `✅ Le personnage ${name} a été ajouté à <@${user.id}>`

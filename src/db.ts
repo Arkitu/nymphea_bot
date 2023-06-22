@@ -10,6 +10,7 @@ export interface User {
 export interface Character {
     user_id: string;
     name: string;
+    avatar_url?: string;
 }
 
 export interface Item {
@@ -48,6 +49,7 @@ export default class DB {
                     `CREATE TABLE IF NOT EXISTS characters (
                         name TEXT NOT NULL,
                         user_id TEXT NOT NULL,
+                        avatar_url TEXT,
                         PRIMARY KEY (name),
                         FOREIGN KEY (user_id) REFERENCES users(id)
                     )`, (err) => {
@@ -163,21 +165,19 @@ export default class DB {
         })
     }
 
-    createCharacter(user_id: string, name: string): Promise<void> {
+    createCharacter(user_id: string, name: string, avatar_url?: string): Promise<void> {
         return new Promise((resolve, reject) => {
-            this.realDB.run("INSERT INTO characters (user_id, name) VALUES (?, ?)", [user_id, name], (err) => {
-                if (err) reject(err);
-                resolve();
-            })
-        })
-    }
-
-    createCharacterIfNotExists(user_id: string, name: string): Promise<void> {
-        return new Promise((resolve, reject) => {
-            this.realDB.run("INSERT OR IGNORE INTO characters (user_id, name) VALUES (?, ?)", [user_id, name], (err) => {
-                if (err) reject(err);
-                resolve();
-            })
+            if (avatar_url) {
+                this.realDB.run("INSERT INTO characters (user_id, name, avatar_url) VALUES (?, ?, ?)", [user_id, name, avatar_url], (err) => {
+                    if (err) reject(err);
+                    resolve();
+                })
+            } else {
+                this.realDB.run("INSERT INTO characters (user_id, name) VALUES (?, ?)", [user_id, name], (err) => {
+                    if (err) reject(err);
+                    resolve();
+                })
+            }
         })
     }
 
@@ -318,18 +318,18 @@ export default class DB {
     addItemToCharacter(char_name: string, item_name: string, quantity: number): Promise<void> {
         return new Promise((resolve, reject) => {
             // Check if user already has item
-            this.realDB.get("SELECT * FROM characters_items WHERE char_name = ? AND item_name = ?", [char_name, item_name], (err, row) => {
+            this.realDB.get("SELECT * FROM characters_items WHERE character_name = ? AND item_name = ?", [char_name, item_name], (err, row) => {
                 if (err) reject(err);
 
                 if (row) {
                     // If user already has item, update quantity
-                    this.realDB.run("UPDATE characters_items SET quantity = quantity + ? WHERE char_name = ? AND item_name = ?", [quantity, char_name, item_name], (err) => {
+                    this.realDB.run("UPDATE characters_items SET quantity = quantity + ? WHERE character_name = ? AND item_name = ?", [quantity, char_name, item_name], (err) => {
                         if (err) reject(err);
                         resolve();
                     })
                 } else {
                     // If user doesn't have item, add it
-                    this.realDB.run("INSERT INTO characters_items (char_name, item_name, quantity) VALUES (?, ?, ?)", [char_name, item_name, quantity], (err) => {
+                    this.realDB.run("INSERT INTO characters_items (character_name, item_name, quantity) VALUES (?, ?, ?)", [char_name, item_name, quantity], (err) => {
                         if (err) reject(err);
                         resolve();
                     })

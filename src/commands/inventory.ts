@@ -102,7 +102,7 @@ async function view(baseInteraction: ChatInputCommandInteraction) {
 
     let embed = new EmbedBuilder()
         .setTitle(`Inventaire de ${character.name} (${user.username})`)
-        .setThumbnail(user.displayAvatarURL())
+        .setThumbnail(character.avatar_url || user.displayAvatarURL())
         .setColor(`#${process.env.MAIN_COLOR}`);
 
     if (Object.keys(items).length === 0) {
