@@ -66,7 +66,16 @@ export default class DB {
                         PRIMARY KEY (name)
                     )`, (err) => {
                         if (err) reject(err);
-                        resolve();
+
+                        // Create money item
+                        this.realDB.run(
+                            `INSERT OR IGNORE INTO items (name, emoji) VALUES (?, ?)`,
+                            ['nymphéos', '💰'],
+                            (err) => {
+                                if (err) reject(err);
+                                resolve();
+                            }
+                        )
                     }
                 )
             }),

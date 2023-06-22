@@ -129,8 +129,10 @@ async function add(baseInteraction: ChatInputCommandInteraction) {
 
     await db.addItemToCharacterOrCreate(character.name, name, emoji, quantity);
 
+    let item = await db.getItem(name);
+
     await interaction.editReply({
-        content: `${quantity} ${emoji} **${name}** ${(()=>{if (quantity == 1) {return "a"} else {return "ont"} })()} été ajouté à l'inventaire de **${character.name}**`,
+        content: `${quantity} ${item.emoji} **${item.name}** ${(()=>{if (quantity == 1) {return "a"} else {return "ont"} })()} été ajouté à l'inventaire de **${character.name}**`,
         components: []
     });
 }
