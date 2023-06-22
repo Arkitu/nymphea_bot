@@ -1,5 +1,6 @@
 import { ChatInputCommandInteraction, EmbedBuilder, SlashCommandBuilder } from 'discord.js';
 import getEmojiFromName from '../getEmojiFromName.js';
+import selectCharacter from '../selectCharacter.js';
 
 export const data = new SlashCommandBuilder()
     .setName('inventory')
@@ -70,9 +71,8 @@ export const data = new SlashCommandBuilder()
     )
 
 export async function execute(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply();
     const subcommand = interaction.options.getSubcommand();
-
-    await db.updateOrCreateUser(interaction.user.id, interaction.user.username);
 
     switch (subcommand) {
         case 'view':
@@ -92,19 +92,21 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     }
 }
 
-async function view(interaction: ChatInputCommandInteraction) {
-    await interaction.deferReply();
-    const user = interaction.options.getUser('user', false) || interaction.user;
+async function view(baseInteraction: ChatInputCommandInteraction) {
+    const user = baseInteraction.options.getUser('user', false) || baseInteraction.user;
 
-    let items = await db.getItemsFromUser(user.id);
+    await db.updateOrCreateUser(user.id, user.username);
+    let [character, interaction] = await selectCharacter(baseInteraction, user.id);
+
+    let items = await db.getItemsFromCharacter(character.name);
 
     let embed = new EmbedBuilder()
-        .setTitle(`Inventaire de ${user.username}`)
-        .setThumbnail(user.displayAvatarURL())
+        .setTitle(`Inventaire de ${character.name} (${user.username})`)
+        .setThumbnail(character.avatar_url || user.displayAvatarURL())
         .setColor(`#${process.env.MAIN_COLOR}`);
 
     if (Object.keys(items).length === 0) {
-        embed.setDescription('Cet utilisateur n\'a aucun item.');
+        embed.setDescription('Ce personnage n\'a aucun item.');
     } else {
         let description = '';
         for (let itemName in items) {
@@ -114,60 +116,91 @@ async function view(interaction: ChatInputCommandInteraction) {
         embed.setDescription(description);
     }
 
-    await interaction.editReply({ embeds: [embed] });
+    await interaction.editReply({ content:"", embeds: [embed], components: [] });
 }
 
-async function add(interaction: ChatInputCommandInteraction) {
-    await interaction.deferReply();
-    const name = interaction.options.getString('name', true).toLocaleLowerCase();
-    const emoji = interaction.options.getString('emoji', false) || await getEmojiFromName(name);
-    const quantity = interaction.options.getInteger('quantity', false) || 1;
+async function add(baseInteraction: ChatInputCommandInteraction) {
+    const name = baseInteraction.options.getString('name', true).toLocaleLowerCase();
+    const emoji = baseInteraction.options.getString('emoji', false) || await getEmojiFromName(name);
+    const quantity = baseInteraction.options.getInteger('quantity', false) || 1;
 
-    await db.addItemToUserOrCreate(interaction.user.id, interaction.user.username, name, emoji, quantity);
+    await db.updateOrCreateUser(baseInteraction.user.id, baseInteraction.user.username);
+    let [character, interaction] = await selectCharacter(baseInteraction, baseInteraction.user.id);
 
-    await interaction.editReply(`${quantity} ${emoji} **${name}** ${(()=>{if (quantity == 1) {return "a"} else {return "ont"} })()} été ajouté à votre inventaire.`);
+    await db.addItemToCharacterOrCreate(character.name, name, emoji, quantity);
+
+    await interaction.editReply({
+        content: `${quantity} ${emoji} **${name}** ${(()=>{if (quantity == 1) {return "a"} else {return "ont"} })()} été ajouté à l'inventaire de **${character.name}**`,
+        components: []
+    });
 }
 
-async function remove(interaction: ChatInputCommandInteraction) {
-    await interaction.deferReply();
-    const name = interaction.options.getString('name', true).toLocaleLowerCase();
-    const quantity = interaction.options.getInteger('quantity', false);
+async function remove(baseInteraction: ChatInputCommandInteraction) {
+    const name = baseInteraction.options.getString('name', true).toLocaleLowerCase();
+    const quantity = baseInteraction.options.getInteger('quantity', false);
+
+    await db.updateOrCreateUser(baseInteraction.user.id, baseInteraction.user.username);
+    let [character, interaction] = await selectCharacter(baseInteraction, baseInteraction.user.id);
 
     let item = await db.getItem(name);
-    let items = await db.getItemsFromUser(interaction.user.id);
+    let items = await db.getItemsFromCharacter(character.name);
 
     if (items[name] === undefined) {
-        await interaction.editReply(`Vous n'avez pas d'objet nommé **${name}** dans votre inventaire.`);
+        await interaction.editReply({
+            content: `**${character.name}** n'a pas d'objet nommé **${name}** dans son inventaire.`,
+            components: []
+        });
         return;
     }
 
-    await db.removeItemFromUser(interaction.user.id, name, quantity);
+    await db.removeItemFromCharacter(character.name, name, quantity);
     
     if (quantity === null) {
-        await interaction.editReply(`Tout les **${name}** ${item.emoji} ont été retiré de votre inventaire.`);
+        await interaction.editReply({
+            content: `Tout les **${name}** ${item.emoji} ont été retiré de l'inventaire de **${character.name}**.`,
+            components: []
+        });
     } else {
-        await interaction.editReply(`**${quantity} ${name}** ${item.emoji} ont été retiré de votre inventaire.`);
+        await interaction.editReply({
+            content: `**${quantity} ${name}** ${item.emoji} ont été retiré de l'inventaire de **${character.name}**.`,
+            components: []
+        });
     }
 }
 
-async function give(interaction: ChatInputCommandInteraction) {
-    await interaction.deferReply();
-    const user = interaction.options.getUser('user', true);
-    const name = interaction.options.getString('name', true).toLocaleLowerCase();
-    const quantity = interaction.options.getInteger('quantity', false);
+async function give(baseInteraction: ChatInputCommandInteraction) {
+    const user = baseInteraction.options.getUser('user', true);
+    const name = baseInteraction.options.getString('name', true).toLocaleLowerCase();
+    const quantity = baseInteraction.options.getInteger('quantity', false);
+
+    await db.updateOrCreateUser(baseInteraction.user.id, baseInteraction.user.username);
+    await db.updateOrCreateUser(user.id, user.username);
+
+    let [giver, secondInteraction] = await selectCharacter(baseInteraction, baseInteraction.user.id);
+    let [receiver, interaction] = await selectCharacter(secondInteraction, user.id);
+
 
     const item = await db.getItem(name);
     if (item === undefined) {
-        await interaction.editReply(`Il n'y a pas d'objet nommé ${name}.`);
+        await interaction.editReply({
+            content: `Il n'y a pas d'objet nommé ${name}.`,
+            components: []
+        });
         return;
     }
 
-    db.giveItem(interaction.user.id, user.id, name, quantity);
+    db.giveItem(giver.name, receiver.name, name, quantity);
 
     if (quantity === null) {
-        await interaction.editReply(`${user.username} a reçu tout les **${name}** ${item.emoji}`);
+        await interaction.editReply({
+            content: `**${receiver.name}** a reçu tout les **${name}** ${item.emoji} de **${giver.name}**`,
+            components: []
+        });
     } else {
-        await interaction.editReply(`${user.username} a reçu **${quantity} ${name}** ${item.emoji}`);
+        await interaction.editReply({
+            content: `**${receiver.name}** a reçu **${quantity} ${name}** ${item.emoji} de la part de **${giver.name}**`,
+            components: []
+        });
     }
 }
 
