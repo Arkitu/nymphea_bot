@@ -53,6 +53,12 @@ client.on(Events.InteractionCreate, async interaction => {
     try {
         await command.execute(interaction);
     } catch (error) {
+        if (error instanceof Error) {
+            if (["No character", "Too many character", "Character chose, timeout"].includes(error.message)) {
+                return;
+            }
+        }
+
         console.error(`${interaction.user.username} tried to use /${interaction.commandName} but an error occured: ${error}`);
         try {
             await interaction.reply({ content: '⚠️ Une erreur est survenue lors de l\'exécution de cette commande!', ephemeral: true });

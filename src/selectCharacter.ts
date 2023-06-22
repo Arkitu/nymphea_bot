@@ -1,7 +1,7 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, ComponentType } from 'discord.js';
 import { Character } from './db.js';
 
-export default async function selectCharacter(interaction: ChatInputCommandInteraction, user_id: string|null = null): Promise<[Character, ChatInputCommandInteraction | ButtonInteraction]> {
+export default async function selectCharacter(interaction: ChatInputCommandInteraction | ButtonInteraction, user_id: string|null = null): Promise<[Character, ChatInputCommandInteraction | ButtonInteraction]> {
     if (user_id === null) {
         user_id = interaction.user.id;
     }
@@ -10,7 +10,8 @@ export default async function selectCharacter(interaction: ChatInputCommandInter
 
     if (characters.length === 0) {
         await interaction.editReply({
-            content: "⚠️ Vous n'avez pas de personnage"
+            content: "⚠️ Vous n'avez pas de personnage",
+            components: []
         });
         throw new Error("No character");
     } else if (characters.length === 1) {
@@ -22,6 +23,10 @@ export default async function selectCharacter(interaction: ChatInputCommandInter
     );
 
     if (buttons.length > 25) {
+        await interaction.editReply({
+            content: "⚠️ Vous avez trop de personnages",
+            components: []
+        });
         throw new Error("Too many characters");
     }
 
@@ -42,9 +47,10 @@ export default async function selectCharacter(interaction: ChatInputCommandInter
         choice = await response.awaitMessageComponent({ filter: i => i.user.id === interaction.user.id, time: 10000, componentType: ComponentType.Button });
     } catch (error) {
         await interaction.editReply({
-            content: "⏱️ Vous n'avez pas choisi de personnage à temps"
+            content: "⏱️ Vous n'avez pas choisi de personnage à temps",
+            components: []
         });
-        throw new Error("Timeout");
+        throw new Error("Character chose timeout");
     }
 
     await choice.deferUpdate();

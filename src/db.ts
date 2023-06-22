@@ -74,8 +74,8 @@ export default class DB {
                         character_name TEXT NOT NULL,
                         item_name TEXT NOT NULL,
                         quantity INTEGER NOT NULL,
-                        PRIMARY KEY (character_name, user_id, item_name),
-                        FOREIGN KEY (character_id, user_id) REFERENCES characters(id, user_id),
+                        PRIMARY KEY (character_name, item_name),
+                        FOREIGN KEY (character_name) REFERENCES characters(name),
                         FOREIGN KEY (item_name) REFERENCES items(name)
                     )`, (err) => {
                         if (err) reject(err);
