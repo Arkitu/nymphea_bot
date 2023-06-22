@@ -22,6 +22,7 @@ export async function execute(baseInteraction: ChatInputCommandInteraction) {
     let embed = new EmbedBuilder()
         .setTitle(`Profil de ${character.name}`)
         .setThumbnail(character.avatar_url || user.displayAvatarURL())
+        .setColor(`#${process.env.MAIN_COLOR}`)
         .addFields(
             { name: "Nymphéos :", value: `${money.quantity.toString()} 💰`, inline: false }
         );
@@ -31,6 +32,7 @@ export async function execute(baseInteraction: ChatInputCommandInteraction) {
         embed = new EmbedBuilder()
             .setTitle(`Profil de ${character.name}`)
             .setThumbnail(character.avatar_url || user.displayAvatarURL())
+            .setColor(`#${process.env.MAIN_COLOR}`)
             .addFields(
                 { name: "Jakobdollars :", value: `${money.quantity.toString()} 💰`, inline: false }
             );

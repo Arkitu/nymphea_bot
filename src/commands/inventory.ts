@@ -101,7 +101,7 @@ async function view(baseInteraction: ChatInputCommandInteraction) {
     let items = await db.getItemsFromCharacter(character.name);
 
     let embed = new EmbedBuilder()
-        .setTitle(`Inventaire de ${character.name} (${user.username})`)
+        .setTitle(`Inventaire de ${character.name}`)
         .setThumbnail(character.avatar_url || user.displayAvatarURL())
         .setColor(`#${process.env.MAIN_COLOR}`);
 
