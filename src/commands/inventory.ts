@@ -1,5 +1,6 @@
 import { ChatInputCommandInteraction, EmbedBuilder, SlashCommandBuilder } from 'discord.js';
 import getEmojiFromName from '../getEmojiFromName.js';
+import selectCharacter from '../selectCharacter.js';
 
 export const data = new SlashCommandBuilder()
     .setName('inventory')
@@ -70,9 +71,8 @@ export const data = new SlashCommandBuilder()
     )
 
 export async function execute(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply();
     const subcommand = interaction.options.getSubcommand();
-
-    await db.updateOrCreateUser(interaction.user.id, interaction.user.username);
 
     switch (subcommand) {
         case 'view':
@@ -93,8 +93,11 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 }
 
 async function view(interaction: ChatInputCommandInteraction) {
-    await interaction.deferReply();
     const user = interaction.options.getUser('user', false) || interaction.user;
+
+    await db.updateOrCreateUser(user.id, user.username);
+    //let character, interaction = await selectCharacter(interaction, user.id);
+
 
     let items = await db.getItemsFromUser(user.id);
 
@@ -118,10 +121,11 @@ async function view(interaction: ChatInputCommandInteraction) {
 }
 
 async function add(interaction: ChatInputCommandInteraction) {
-    await interaction.deferReply();
     const name = interaction.options.getString('name', true).toLocaleLowerCase();
     const emoji = interaction.options.getString('emoji', false) || await getEmojiFromName(name);
     const quantity = interaction.options.getInteger('quantity', false) || 1;
+
+    await db.updateOrCreateUser(interaction.user.id, interaction.user.username);
 
     await db.addItemToUserOrCreate(interaction.user.id, interaction.user.username, name, emoji, quantity);
 
@@ -129,9 +133,10 @@ async function add(interaction: ChatInputCommandInteraction) {
 }
 
 async function remove(interaction: ChatInputCommandInteraction) {
-    await interaction.deferReply();
     const name = interaction.options.getString('name', true).toLocaleLowerCase();
     const quantity = interaction.options.getInteger('quantity', false);
+
+    await db.updateOrCreateUser(interaction.user.id, interaction.user.username);
 
     let item = await db.getItem(name);
     let items = await db.getItemsFromUser(interaction.user.id);
@@ -151,10 +156,12 @@ async function remove(interaction: ChatInputCommandInteraction) {
 }
 
 async function give(interaction: ChatInputCommandInteraction) {
-    await interaction.deferReply();
     const user = interaction.options.getUser('user', true);
     const name = interaction.options.getString('name', true).toLocaleLowerCase();
     const quantity = interaction.options.getInteger('quantity', false);
+
+    await db.updateOrCreateUser(interaction.user.id, interaction.user.username);
+    await db.updateOrCreateUser(user.id, user.username);
 
     const item = await db.getItem(name);
     if (item === undefined) {
