@@ -28,7 +28,7 @@ export const data = new SlashCommandBuilder()
     );
 
 export async function execute(interaction: ChatInputCommandInteraction) {
-    await interaction.deferReply();
+    interaction.deferReply();
 
     if (!process.env.RP_ADMIN_IDS?.split(", ").includes(interaction.user.id)) {
         await interaction.editReply({
