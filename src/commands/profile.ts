@@ -11,7 +11,7 @@ export const data = new SlashCommandBuilder()
     );
 
 export async function execute(baseInteraction: ChatInputCommandInteraction) {
-    baseInteraction.deferReply();
+    await baseInteraction.deferReply();
 
     const user = baseInteraction.options.getUser('user', false) ?? baseInteraction.user;
 

@@ -73,6 +73,34 @@ client.on(Events.InteractionCreate, async interaction => {
     }
 })
 
+client.on(Events.InteractionCreate, async interaction => {
+    if (!interaction.isAutocomplete()) return;
+
+    const command = commands.get(interaction.commandName);
+    if (command === undefined) {
+        console.error(`${interaction.user.username} tried to use an unknown autocomplete: ${interaction.commandName}`);
+        return;
+    }
+
+    if (command.admin && !process.env.ADMIN_IDS?.split(", ").includes(interaction.user.id)) {
+        return;
+    }
+
+    if (interaction.options.getSubcommandGroup(false)) {
+        console.log(`${interaction.user.username} uses autocomplete: /${interaction.commandName} ${interaction.options.getSubcommandGroup(true)} ${interaction.options.getSubcommand(true)}`);
+    } else if (interaction.options.getSubcommand(false)) {
+        console.log(`${interaction.user.username} uses autocomplete: /${interaction.commandName} ${interaction.options.getSubcommand(true)}`);
+    } else {
+        console.log(`${interaction.user.username} uses autocomplete: /${interaction.commandName}`);
+    }
+
+    try {
+        await command.autocomplete(interaction);
+    } catch (error) {
+        console.error(`${interaction.user.username} tried to use /${interaction.commandName} autocomplete but an error occured: ${error}`);
+    }
+})
+
 // If no token is provided, exit
 if (process.env.DISCORD_TOKEN === undefined) {
     console.error("No token provided! Please set the DISCORD_TOKEN environment variable in config.env");

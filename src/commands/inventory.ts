@@ -1,6 +1,7 @@
-import { ChatInputCommandInteraction, EmbedBuilder, SlashCommandBuilder } from 'discord.js';
+import { AutocompleteInteraction, ChatInputCommandInteraction, EmbedBuilder, SlashCommandBuilder } from 'discord.js';
 import getEmojiFromName from '../getEmojiFromName.js';
 import selectCharacter from '../selectCharacter.js';
+import objectFromUser from '../autocomplete/objectFromUser.js';
 
 export const data = new SlashCommandBuilder()
     .setName('inventory')
@@ -21,6 +22,7 @@ export const data = new SlashCommandBuilder()
                 option.setName('name')
                     .setDescription('Nom de l\'objet')
                     .setRequired(true)
+                    .setAutocomplete(true)
             )
             .addIntegerOption(option =>
                 option.setName('quantity')
@@ -41,6 +43,7 @@ export const data = new SlashCommandBuilder()
                 option.setName('name')
                     .setDescription('Nom de l\'objet')
                     .setRequired(true)
+                    .setAutocomplete(true)
             )
             .addIntegerOption(option =>
                 option.setName('quantity')
@@ -61,6 +64,7 @@ export const data = new SlashCommandBuilder()
                 option.setName('name')
                     .setDescription('Nom de l\'objet')
                     .setRequired(true)
+                    .setAutocomplete(true)
             )
             .addIntegerOption(option =>
                 option.setName('quantity')
@@ -68,10 +72,21 @@ export const data = new SlashCommandBuilder()
                     .setMinValue(1)
                     .setRequired(false)
             )
-    )
+    );
+
+export async function autocomplete(interaction: AutocompleteInteraction) {
+    const subcommand = interaction.options.getSubcommand();
+    const focused = interaction.options.getFocused(true);
+
+    if (subcommand === 'add') {
+        await interaction.respond(await objectFromUser(interaction.user.username, focused.value, true));
+    } else {
+        await interaction.respond(await objectFromUser(interaction.user.username, focused.value, false));
+    }
+}
 
 export async function execute(interaction: ChatInputCommandInteraction) {
-    interaction.deferReply();
+    await interaction.deferReply();
     const subcommand = interaction.options.getSubcommand();
 
     switch (subcommand) {
