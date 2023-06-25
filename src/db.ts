@@ -24,6 +24,13 @@ export interface CharacterItem {
     quantity: number;
 }
 
+export interface Spirit {
+    owner_name: string;
+    death_date: Date;
+    // 0: common, 1: rare, 2: legendary
+    rarity: number;
+}
+
 export default class DB {
     private realDB: Database;
     constructor() {
@@ -88,6 +95,20 @@ export default class DB {
                         PRIMARY KEY (character_name, item_name),
                         FOREIGN KEY (character_name) REFERENCES characters(name),
                         FOREIGN KEY (item_name) REFERENCES items(name)
+                    )`, (err) => {
+                        if (err) reject(err);
+                        resolve();
+                    }
+                )
+            }),
+            new Promise<void>((resolve, reject) => {
+                this.realDB.run(
+                    `CREATE TABLE IF NOT EXISTS spirits (
+                        owner_name TEXT NOT NULL,
+                        death_date TEXT NOT NULL,
+                        rarity INTEGER NOT NULL,
+                        PRIMARY KEY (owner_name),
+                        FOREIGN KEY (owner_name) REFERENCES characters(name)
                     )`, (err) => {
                         if (err) reject(err);
                         resolve();
@@ -371,6 +392,25 @@ export default class DB {
 
                 // Add item to user
                 this.addItemToCharacter(char_name, item_name, quantity).then(resolve);
+            })
+        })
+    }
+
+    // Spirit
+    createSpirit(char_name: string, death_date: Date, rarity: number): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.realDB.run("INSERT INTO spirits (character_name, death_date, rarity) VALUES (?, ?, ?)", [char_name, death_date, rarity], (err) => {
+                if (err) reject(err);
+                resolve();
+            })
+        })
+    }
+
+    getSpirit(char_name: string): Promise<Spirit> {
+        return new Promise((resolve, reject) => {
+            this.realDB.get("SELECT * FROM spirits WHERE character_name = ?", [char_name], (err, row) => {
+                if (err) reject(err);
+                resolve(row as Spirit);
             })
         })
     }

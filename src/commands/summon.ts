@@ -5,7 +5,7 @@ export const data = new SlashCommandBuilder()
     .setDescription('Invoque un esprit');
 
 export async function execute(interaction: ChatInputCommandInteraction) {
-    // ~Fait~ Fera des trucs quand les instructions seront plus claires
+    await interaction.deferReply();
 }
 
 export const admin = false;
