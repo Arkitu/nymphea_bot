@@ -50,7 +50,7 @@ export const data = new SlashCommandBuilder()
     );
 
 export async function execute(interaction: ChatInputCommandInteraction) {
-    await interaction.deferReply();
+    interaction.deferReply();
     
     switch (interaction.options.getSubcommandGroup(true) + "/" + interaction.options.getSubcommand(true)) {
         case "user/create":

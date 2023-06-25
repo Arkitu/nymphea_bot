@@ -71,7 +71,7 @@ export const data = new SlashCommandBuilder()
     )
 
 export async function execute(interaction: ChatInputCommandInteraction) {
-    await interaction.deferReply();
+    interaction.deferReply();
     const subcommand = interaction.options.getSubcommand();
 
     switch (subcommand) {
