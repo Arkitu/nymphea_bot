@@ -442,6 +442,11 @@ export default class DB {
     getSpirit(char_name: string): Promise<Spirit|null> {
         return new Promise((resolve, reject) => {
             this.getSpiritBase(char_name).then((spirit) => {
+                if (!spirit) {
+                    resolve(null);
+                    return;
+                }
+
                 if (spirit.death_date < new Date()) {
                     resolve(null);
                 } else {
