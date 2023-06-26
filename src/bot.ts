@@ -68,7 +68,11 @@ client.on(Events.InteractionCreate, async interaction => {
         try {
             await interaction.reply({ content: '⚠️ Une erreur est survenue lors de l\'exécution de cette commande!', ephemeral: true });
         } catch (error) {
-            await interaction.editReply({ content: '⚠️ Une erreur est survenue lors de l\'exécution de cette commande!' });
+            await interaction.editReply({
+                content: '⚠️ Une erreur est survenue lors de l\'exécution de cette commande!',
+                components: [],
+                embeds: []
+            });
         }
     }
 })
