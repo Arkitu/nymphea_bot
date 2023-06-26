@@ -423,9 +423,12 @@ export default class DB {
                 character_name: string,
                 death_date: number,
                 rarity: number
-            }) => {
+            }|undefined) => {
                 if (err) reject(err)
-                if (!row) resolve(null);
+                if (!row) {
+                    resolve(null);
+                    return;
+                }
                 
                 resolve({
                     character_name: row.character_name,
