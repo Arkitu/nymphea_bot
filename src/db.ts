@@ -417,14 +417,15 @@ export default class DB {
         })
     }
 
-    getSpiritBase(char_name: string): Promise<Spirit> {
+    getSpiritBase(char_name: string): Promise<Spirit|null> {
         return new Promise((resolve, reject) => {
             this.realDB.get("SELECT * FROM spirits WHERE character_name = ?", [char_name], (err, row: {
                 character_name: string,
                 death_date: number,
                 rarity: number
             }) => {
-                if (err) reject(err);
+                if (err) reject(err)
+                if (!row) resolve(null);
                 
                 resolve({
                     character_name: row.character_name,
