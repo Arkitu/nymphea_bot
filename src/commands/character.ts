@@ -22,6 +22,15 @@ export const data = new SlashCommandBuilder()
                     .setRequired(false)
             )
     )
+    .addSubcommand(subcommand =>
+        subcommand.setName('remove')
+            .setDescription('Supprime un personnage (admin uniquement)')
+            .addStringOption(option =>
+                option.setName('name')
+                    .setDescription('Nom du personnage')
+                    .setRequired(true)
+            )
+    )
 
 export async function execute(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply();
@@ -31,6 +40,9 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     switch (subcommand) {
         case 'add':
             await characterAdd(interaction);
+            break;
+        case 'remove':
+            await characterRemove(interaction);
             break;
         default:
             throw new Error(`Subcommand ${subcommand} not implemented but used by ${interaction.user.username}`);
@@ -59,6 +71,23 @@ async function characterAdd(interaction: ChatInputCommandInteraction) {
 
     await interaction.editReply({
         content: `✅ Le personnage ${name} a été ajouté à <@${user.id}>`
+    });
+}
+
+async function characterRemove(interaction: ChatInputCommandInteraction) {
+    if (!process.env.RP_ADMIN_IDS?.split(", ").includes(interaction.user.id)) {
+        await interaction.editReply({
+            content: "⚠ Vous n'avez pas la permission d'utiliser cette commande"
+        });
+        return;
+    }
+
+    const name = interaction.options.getString('name', true);
+
+    await db.removeCharacter(name);
+
+    await interaction.editReply({
+        content: `✅ Le personnage ${name} a été supprimé`
     });
 }
 
