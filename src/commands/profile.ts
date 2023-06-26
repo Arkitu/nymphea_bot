@@ -37,6 +37,13 @@ export async function execute(baseInteraction: ChatInputCommandInteraction) {
                 { name: "Jakobdollars :", value: `${money.quantity.toString()} 💰`, inline: false }
             );
     }
+
+    const spirit = await db.getSpirit(character.name);
+    if (spirit) {
+        embed.addFields(
+            { name: "Esprit :", value: `${spirit.rarity == 0 ? "commun" : spirit.rarity == 1 ? "rare" : "légendaire"} (expire dans ${Math.floor((spirit.death_date.getTime() - Date.now()) / 1000 / 60)} minutes)`, inline: false}
+        );
+    }
     
     await interaction.editReply({
         embeds: [embed],

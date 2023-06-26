@@ -25,7 +25,7 @@ export interface CharacterItem {
 }
 
 export interface Spirit {
-    owner_name: string;
+    character_name: string;
     death_date: Date;
     // 0: common, 1: rare, 2: legendary
     rarity: number;
@@ -104,11 +104,11 @@ export default class DB {
             new Promise<void>((resolve, reject) => {
                 this.realDB.run(
                     `CREATE TABLE IF NOT EXISTS spirits (
-                        owner_name TEXT NOT NULL,
-                        death_date TEXT NOT NULL,
+                        character_name TEXT NOT NULL,
+                        death_date INT NOT NULL,
                         rarity INTEGER NOT NULL,
-                        PRIMARY KEY (owner_name),
-                        FOREIGN KEY (owner_name) REFERENCES characters(name)
+                        PRIMARY KEY (character_name),
+                        FOREIGN KEY (character_name) REFERENCES characters(name)
                     )`, (err) => {
                         if (err) reject(err);
                         resolve();
@@ -397,21 +397,53 @@ export default class DB {
     }
 
     // Spirit
-    createSpirit(char_name: string, death_date: Date, rarity: number): Promise<void> {
+    removeSpirit(char_name: string): Promise<void> {
         return new Promise((resolve, reject) => {
-            this.realDB.run("INSERT INTO spirits (character_name, death_date, rarity) VALUES (?, ?, ?)", [char_name, death_date, rarity], (err) => {
+            this.realDB.run("DELETE FROM spirits WHERE character_name = ?", [char_name], (err) => {
                 if (err) reject(err);
                 resolve();
             })
         })
     }
 
-    getSpirit(char_name: string): Promise<Spirit> {
+    createSpirit(char_name: string, death_date: Date, rarity: number): Promise<void> {
         return new Promise((resolve, reject) => {
-            this.realDB.get("SELECT * FROM spirits WHERE character_name = ?", [char_name], (err, row) => {
+            this.removeSpirit(char_name).then(() => {
+                this.realDB.run("INSERT INTO spirits (character_name, death_date, rarity) VALUES (?, ?, ?)", [char_name, death_date.getTime(), rarity], (err) => {
+                    if (err) reject(err);
+                    resolve();
+                })
+            }).catch(reject);
+        })
+    }
+
+    getSpiritBase(char_name: string): Promise<Spirit> {
+        return new Promise((resolve, reject) => {
+            this.realDB.get("SELECT * FROM spirits WHERE character_name = ?", [char_name], (err, row: {
+                character_name: string,
+                death_date: number,
+                rarity: number
+            }) => {
                 if (err) reject(err);
-                resolve(row as Spirit);
+                
+                resolve({
+                    character_name: row.character_name,
+                    death_date: new Date(row.death_date),
+                    rarity: row.rarity
+                });
             })
+        })
+    }
+
+    getSpirit(char_name: string): Promise<Spirit|null> {
+        return new Promise((resolve, reject) => {
+            this.getSpiritBase(char_name).then((spirit) => {
+                if (spirit.death_date < new Date()) {
+                    resolve(null);
+                } else {
+                    resolve(spirit);
+                }
+            }).catch(reject);
         })
     }
 }
