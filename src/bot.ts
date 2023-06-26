@@ -59,7 +59,7 @@ client.on(Events.InteractionCreate, async interaction => {
         await command.execute(interaction);
     } catch (error) {
         if (error instanceof Error) {
-            if (["No character", "Too many character", "Character chose, timeout"].includes(error.message)) {
+            if (["No character", "Too many character", "Character chose timeout"].includes(error.message)) {
                 return;
             }
         }
