@@ -220,6 +220,22 @@ export default class DB {
         })
     }
 
+    updateCharacter(name: string, avatar_url?: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            if (avatar_url) {
+                this.realDB.run("UPDATE characters SET avatar_url = ? WHERE name = ?", [avatar_url, name], (err) => {
+                    if (err) reject(err);
+                    resolve();
+                })
+            } else {
+                this.realDB.run("UPDATE characters SET avatar_url = NULL WHERE name = ?", [name], (err) => {
+                    if (err) reject(err);
+                    resolve();
+                })
+            }
+        })
+    }
+
     getAllCharacters(): Promise<Character[]> {
         return new Promise((resolve, reject) => {
             this.realDB.all("SELECT * FROM characters", (err, rows) => {

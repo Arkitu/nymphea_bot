@@ -1,4 +1,5 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
+import selectCharacter from '../selectCharacter.js';
 
 export const data = new SlashCommandBuilder()
     .setName('character')
@@ -31,6 +32,20 @@ export const data = new SlashCommandBuilder()
                     .setRequired(true)
             )
     )
+    .addSubcommand(subcommand =>
+        subcommand.setName('edit')
+            .setDescription('Modifie un personnage')
+            .addUserOption(option =>
+                option.setName('user')
+                    .setDescription('Utilisateur dont le personnage doit être modifié (admin uniquement)')
+                    .setRequired(false)
+            )
+            .addStringOption(option =>
+                option.setName('avatar_url')
+                    .setDescription('URL de l\'avatar du personnage')
+                    .setRequired(false)
+            )
+    );
 
 export async function execute(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply();
@@ -43,6 +58,9 @@ export async function execute(interaction: ChatInputCommandInteraction) {
             break;
         case 'remove':
             await characterRemove(interaction);
+            break;
+        case 'edit':
+            await characterEdit(interaction);
             break;
         default:
             throw new Error(`Subcommand ${subcommand} not implemented but used by ${interaction.user.username}`);
@@ -88,6 +106,29 @@ async function characterRemove(interaction: ChatInputCommandInteraction) {
 
     await interaction.editReply({
         content: `✅ Le personnage ${name} a été supprimé`
+    });
+}
+
+async function characterEdit(baseInteraction: ChatInputCommandInteraction) {
+    const optUser = baseInteraction.options.getUser('user', false);
+
+    if (optUser && !process.env.RP_ADMIN_IDS?.split(", ").includes(baseInteraction.user.id)) {
+        await baseInteraction.editReply({
+            content: "⚠ Vous n'avez pas la permission d'utiliser cette commande avec l'option `user`"
+        });
+        return;
+    }
+
+    const user = optUser || baseInteraction.user;
+    const avatarUrl = baseInteraction.options.getString('avatar_url', false);
+
+    const [char, interaction] = await selectCharacter(baseInteraction, user.id);
+
+    await db.updateCharacter(char.name, avatarUrl);
+
+    await interaction.editReply({
+        content: `✅ Le personnage ${char.name} a été modifié`,
+        components: []
     });
 }
 
