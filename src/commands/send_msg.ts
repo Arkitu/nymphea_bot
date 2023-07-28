@@ -58,7 +58,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
             const channel = interaction.options.getChannel('channel', false) ?? interaction.channel;
 
-            await (channel as TextBasedChannel).send({ embeds: [JSON.parse(json)] });
+            await (channel as TextBasedChannel).send(JSON.parse(json));
 
             await interaction.editReply('Message envoyé');
         }
