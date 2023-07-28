@@ -7,3 +7,7 @@ export function getMainGuild(client: Client) {
 export async function isUserJugesFiches(client: Client, user_id: string): Promise<boolean> {
     return (await (await getMainGuild(client)).members.fetch(user_id)).roles.cache.some(role => role.id === process.env.JUGES_FICHES_ROLE_ID)
 }
+
+export async function isUserStaff(client: Client, user_id: string): Promise<boolean> {
+    return (await (await getMainGuild(client)).members.fetch(user_id)).roles.cache.some(role => role.id === process.env.STAFF_ROLE_ID)
+}

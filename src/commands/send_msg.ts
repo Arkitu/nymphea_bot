@@ -1,4 +1,5 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder, TextBasedChannel } from 'discord.js';
+import { isUserStaff } from '../check_if_user_is_admin';
 
 export const data = new SlashCommandBuilder()
     .setName('send_msg')
@@ -30,7 +31,7 @@ export const data = new SlashCommandBuilder()
     );
 
 export async function execute(interaction: ChatInputCommandInteraction) {
-    if (!process.env.RP_ADMIN_IDS?.split(", ").includes(interaction.user.id)) {
+    if (!isUserStaff(interaction.client, interaction.user.id)) {
         await interaction.editReply({
             content: "⚠ Vous n'avez pas la permission d'utiliser cette commande"
         });
