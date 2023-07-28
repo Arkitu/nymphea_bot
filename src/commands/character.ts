@@ -1,12 +1,13 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import selectCharacter from '../selectCharacter.js';
+import { isUserJugesFiches } from '../check_if_user_is_admin.js';
 
 export const data = new SlashCommandBuilder()
     .setName('character')
     .setDescription('Intéragis avec les personnages')
     .addSubcommand(subcommand =>
         subcommand.setName('add')
-            .setDescription('Ajoute un personnage (admin uniquement)')
+            .setDescription('Ajoute un personnage (juges fiches uniquement)')
             .addStringOption(option =>
                 option.setName('name')
                     .setDescription('Nom du personnage')
@@ -25,7 +26,7 @@ export const data = new SlashCommandBuilder()
     )
     .addSubcommand(subcommand =>
         subcommand.setName('remove')
-            .setDescription('Supprime un personnage (admin uniquement)')
+            .setDescription('Supprime un personnage (juges fiches uniquement)')
             .addStringOption(option =>
                 option.setName('name')
                     .setDescription('Nom du personnage')
@@ -37,7 +38,7 @@ export const data = new SlashCommandBuilder()
             .setDescription('Modifie un personnage')
             .addUserOption(option =>
                 option.setName('user')
-                    .setDescription('Utilisateur dont le personnage doit être modifié (admin uniquement)')
+                    .setDescription('Utilisateur dont le personnage doit être modifié (par défaut: vous) (juges fiches uniquement)')
                     .setRequired(false)
             )
             .addStringOption(option =>
@@ -68,7 +69,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 }
 
 async function characterAdd(interaction: ChatInputCommandInteraction) {
-    if (!process.env.RP_ADMIN_IDS?.split(", ").includes(interaction.user.id)) {
+
+    if (!isUserJugesFiches(interaction.client, interaction.user.id)) {
         await interaction.editReply({
             content: "⚠ Vous n'avez pas la permission d'utiliser cette commande"
         });
@@ -93,7 +95,7 @@ async function characterAdd(interaction: ChatInputCommandInteraction) {
 }
 
 async function characterRemove(interaction: ChatInputCommandInteraction) {
-    if (!process.env.RP_ADMIN_IDS?.split(", ").includes(interaction.user.id)) {
+    if (!isUserJugesFiches(interaction.client, interaction.user.id)) {
         await interaction.editReply({
             content: "⚠ Vous n'avez pas la permission d'utiliser cette commande"
         });
@@ -112,7 +114,7 @@ async function characterRemove(interaction: ChatInputCommandInteraction) {
 async function characterEdit(baseInteraction: ChatInputCommandInteraction) {
     const optUser = baseInteraction.options.getUser('user', false);
 
-    if (optUser && !process.env.RP_ADMIN_IDS?.split(", ").includes(baseInteraction.user.id)) {
+    if (optUser && !isUserJugesFiches(baseInteraction.client, baseInteraction.user.id)) {
         await baseInteraction.editReply({
             content: "⚠ Vous n'avez pas la permission d'utiliser cette commande avec l'option `user`"
         });

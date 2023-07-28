@@ -2,7 +2,7 @@ import { ChatInputCommandInteraction, SlashCommandBuilder, TextBasedChannel } fr
 
 export const data = new SlashCommandBuilder()
     .setName('send_msg')
-    .setDescription('ADMIN: Envoie un message')
+    .setDescription('Envoie un message (admin uniquement)')
     .addSubcommand(subcmd => 
         subcmd.setName('simple')
             .setDescription('Envoie un message sans embed')
