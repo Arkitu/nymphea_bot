@@ -1,5 +1,5 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder, TextBasedChannel } from 'discord.js';
-import { isUserStaff } from '../check_if_user_is_admin';
+import { isUserStaff } from '../check_if_user_is_admin.js';
 
 export const data = new SlashCommandBuilder()
     .setName('send_msg')
